@@ -48,7 +48,7 @@ def main():
         N = 0
         sumN = 0
         start = accelerometerData[i][0]
-        while accelerometerData[j][0] - start < fiveMin:
+        while accelerometerData[j][0] - start <= fiveMin:
             sqrt = np.sqrt(accelerometerData[j][1] ** 2 + accelerometerData[j][2] ** 2 + accelerometerData[j][3] ** 2)
             sumN += (sqrt - 9.81) ** 2
             j += 1
@@ -57,7 +57,7 @@ def main():
                 break
 
         mse = np.sqrt(sumN / N)
-        if maxMse< mse:
+        if maxMse < mse:
             maxMse = mse
         end = accelerometerData[j - 1][0]
         listMse.append(
@@ -66,6 +66,51 @@ def main():
         approximateScheduleMse.append(mse)
         approximateScheduleTime.append(datetime.datetime.fromtimestamp((start + halfFiveMin)/1000))
         i += N
+
+    approximateScheduleMsePeriods = []
+    approximateScheduleTimePeriods = []
+    activePeriod = []
+    i = 0
+    while i < len(approximateScheduleMse) - 1:
+
+        approximateScheduleMsePeriod = []
+        approximateScheduleTimePeriod = []
+
+        if i != 0 and not activePeriod[len(activePeriod) - 1]:
+            approximateScheduleMsePeriod.append(approximateScheduleMse[i - 1])
+            approximateScheduleTimePeriod.append(approximateScheduleTime[i - 1])
+
+        if approximateScheduleMse[i] > 0.5:
+            j = i
+            while approximateScheduleMse[j] > 0.5:
+                approximateScheduleMsePeriod.append(approximateScheduleMse[j])
+                approximateScheduleTimePeriod.append(approximateScheduleTime[j])
+                j += 1
+                if j == len(approximateScheduleMse) - 1:
+                    break
+
+
+            activePeriod.append(True)
+
+        else:
+            j = i
+            while approximateScheduleMse[j] <= 0.5:
+                approximateScheduleMsePeriod.append(approximateScheduleMse[j])
+                approximateScheduleTimePeriod.append(approximateScheduleTime[j])
+                j += 1
+                if j == len(approximateScheduleMse) - 1:
+                    break
+
+            activePeriod.append(False)
+
+        i = j
+        if activePeriod[len(activePeriod) - 1]:
+            approximateScheduleMsePeriod.append(approximateScheduleMse[i])
+            approximateScheduleTimePeriod.append(approximateScheduleTime[i])
+        approximateScheduleMsePeriods.append(approximateScheduleMsePeriod)
+        approximateScheduleTimePeriods.append(approximateScheduleTimePeriod)
+
+
 
     # Список промежутков времени, в которые пользователь считает себя активным (начало - конец)
     userFeelTimeActive = []
@@ -80,6 +125,7 @@ def main():
             userFeelTimeActiveSwitch.append(activeStart)
             userFeelTimeActiveSwitch.append(activeEnd)
 
+    '''
     labels = ["dws", "ups", "sit", "std", "wlk", "jog"]
     colors = ['green', 'yellow', 'blue', 'orange', 'magenta', 'brown']
 
@@ -106,7 +152,7 @@ def main():
             j += 1
         approximateScheduleMsePeriods.append(approximateScheduleMsePeriod)
         approximateScheduleTimePeriods.append(approximateScheduleTimePeriod)
-
+    '''
 
 
     fig, ax = pylab.plt.subplots()
@@ -114,17 +160,37 @@ def main():
     fig.set_size_inches(40, 20)
 
     # Рисуем графики MSE
-    # for mse in listMse:
-    #     pylab.hlines(mse.mse, mse.start, mse.end, 'gray', linewidth=5)
+    for mse in listMse:
+
+        if mse.mse >= 0.4:
+            color = 'magenta'
+        else:
+            color = 'green'
+
+        pylab.hlines(mse.mse, mse.start, mse.end, color, linewidth=5)
+        x = [mse.start, mse.end]
+        pylab.fill_between(x, 0, mse.mse, alpha = 0.3, color=color)
 
     maxMse += 0.5
 
     # Рисуем график апроксимации MSE
-    # pylab.plot_date(matplotlib.dates.date2num(approximateScheduleTime), approximateScheduleMse, 'g--', lw=2)
+    pylab.plot_date(matplotlib.dates.date2num(approximateScheduleTime), approximateScheduleMse, 'k--', lw=2)
+    '''
     for count in range(len(typesActivity)):
         pylab.plot_date(matplotlib.dates.date2num(approximateScheduleTimePeriods[count]),
                         approximateScheduleMsePeriods[count], colors[int(typesActivity[count])], lw=5)
+    '''
 
+
+    '''
+    for count in range(len(activePeriod)):
+        if activePeriod[count]:
+            color = 'magenta'
+        else:
+            color = 'green'
+        pylab.plot_date(matplotlib.dates.date2num(approximateScheduleTimePeriods[count]),
+                        approximateScheduleMsePeriods[count], color, lw=5)
+    '''
 
     # Отмечаем на графике периоды времени, в которые пользователь считает себя активным
     for i in range(len(userFeelTimeActive)):
@@ -147,6 +213,7 @@ def main():
     pylab.gcf().autofmt_xdate()
     pylab.tick_params(axis='both', which='major', labelsize=30)
 
+    '''
     pylab.annotate('поднятие по ступенькам', xy=(matplotlib.dates.date2num(approximateScheduleTime[0]), maxMse - 0.5),
                    color='green', fontsize=40)
     pylab.annotate('спускание по ступенькам', xy=(matplotlib.dates.date2num(approximateScheduleTime[0]), maxMse - 1.0),
@@ -159,6 +226,18 @@ def main():
                    fontsize=40)
     pylab.annotate('бег трусцой', xy=(matplotlib.dates.date2num(approximateScheduleTime[0]), maxMse - 3.0),
                    color='brown', fontsize=40)
+    '''
+
+    pylab.annotate('- активное состояние', xy=(matplotlib.dates.date2num(approximateScheduleTime[0]), maxMse - 2.5), color='magenta',
+                   fontsize=40)
+    pylab.annotate('- неактивное состояние', xy=(matplotlib.dates.date2num(approximateScheduleTime[0]), maxMse - 3.5),
+                   color='green', fontsize=40)
+
+    pylab.annotate('-- аппроксимация данных акселерометра', xy=(matplotlib.dates.date2num(approximateScheduleTime[0]), maxMse - 4.5),
+                   color='black',
+                   fontsize=40)
+    pylab.annotate('-- данные от пользователя', xy=(matplotlib.dates.date2num(approximateScheduleTime[0]), maxMse - 5.5),
+                   color='red', fontsize=40)
 
     pylab.show()
 
