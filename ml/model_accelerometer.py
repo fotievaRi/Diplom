@@ -12,7 +12,7 @@ def load_accelerometer_data():
     accelerometerDataFile = "../monitoring_date_base-table_accelerometer_data.csv"
     readAccelerometerData = pd.read_csv(accelerometerDataFile, sep=";")
     accelerometerData = readAccelerometerData.values[1:]
-    halfMin = 30000
+    halfMin = 300000
     i = 0
     sample_id = 1
     sizeAccelerometerData = accelerometerData.shape[0]
@@ -129,7 +129,7 @@ def create_keras_model(num_classes):
 # simple model training.
 # you might want to avoid overfitting by monitoring validation loss and implement early stopping, etc
 def train_model(model, X, y):
-    model.fit(X, y, epochs=500, batch_size=32)
+    model.fit(X, y, epochs=200, batch_size=32)
 
 
 def predict(model, X):
@@ -162,7 +162,7 @@ def main():
 
     # generate the table with the correct IDs for kaggle.
     # we get the correct sample ID from the stored array (test_sample_ids)
-    submission_results = pd.DataFrame({'label': y_pred_numerical})
+    submission_results = pd.DataFrame({'label': y_pred_numerical, 'start': time_start, 'end': time_end})
     submission_results.to_csv("accelerometer_m1.csv", index=False)
 
     n = 0
